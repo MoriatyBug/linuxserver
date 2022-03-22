@@ -273,6 +273,11 @@ void HttpProcesser::handleRead()
     }
 }
 
+void HttpProcesser::handleConn()
+{
+    
+}
+
 
 int main()
 {
