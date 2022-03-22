@@ -4,4 +4,4 @@ build/
 # 忽略 build 文件夹下所有文件，不包括 build 文件夹
 # build/:
 
-.vscode/settings.json
+*.json
