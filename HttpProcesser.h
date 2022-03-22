@@ -8,6 +8,8 @@ enum CHECK_STATE {
     CHECK_STATE_REQUEST_LINE = 0,
     CHECK_STATE_HEADER,
     CHECK_STATE_BODY,
+    CHECK_STATE_ANALYSIS,
+    CHECK_STATE_FINISH,
 };
 
 enum LINE_STATUS {
@@ -23,6 +25,7 @@ enum HTTP_CODE {
     FORBIDDEN_REQUEST,
     INTERNAL_ERROR,
     CLOSED_CONNECTION,
+    ANALYSIS_SUCCESS,
 };
 
 enum HTTP_METHOD {
@@ -36,14 +39,32 @@ enum HTTP_VERSION {
     HTTP_11,
 };
 
+enum HEADER_STATE {
+    H_START,
+    H_KEY,
+    H_COLON,
+    H_SPACE,
+    H_VALUE,
+    H_CR,
+    H_LF,
+    H_END_CR,
+    H_END_LF,
+};
+
+enum CONNECTION_STATE {
+    C_DISCONNECTING,
+    C_CONNECTED,
+    C_DISCONNECTED,
+};
+
 class HttpProcesser {
 public:
-    HttpProcesser();
-    ~HttpProcesser();
+    // HttpProcesser();
+    // ~HttpProcesser();
     void handleClose();
     void newEvent();
 
-private:
+public:
     int fd_;
     string inBuffer_;
     string outBuffer_;
@@ -56,6 +77,10 @@ private:
     CHECK_STATE check_state_;
     bool keepAlive_;
     map<string, string> headMap;
+    HEADER_STATE header_state_;
+    HTTP_VERSION version_;
+    HTTP_METHOD method_;
+    CONNECTION_STATE connection_state_;
 
     void handleRead();
     void handleWrite();
