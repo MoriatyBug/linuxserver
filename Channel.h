@@ -1,22 +1,18 @@
 #ifndef _CHANNEL_H_
 #define _CHANNEL_H_
 
-#include <functional>
-#include <memory>
 #include <sys/epoll.h>
 #include "HttpProcesser.h"
 #include "EventLoop.h"
+#include "util/util.h"
 
 using namespace std;
-
-typedef __uint32_t UINT32;
-typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 
 class Channel
 {
 private:
-    typedef function<void()> CallBack;
     int fd_;
+    EventLoop* loop_;
     UINT32 events_;
     UINT32 revents_;
     
@@ -29,8 +25,12 @@ private:
 public:
     Channel(EventLoop* loop);
     Channel(EventLoop* loop, int fd);
-    int getFd();
-    void setFd(int fd);
+    int getFd() {
+        return fd_;
+    }
+    void setFd(int fd) {
+        fd_ = fd;
+    }
 
     shared_ptr<HttpProcesser> getHolder() {
         shared_ptr<HttpProcesser> ret(holder_.lock()); // ?啥意思
@@ -53,10 +53,27 @@ public:
         conn_handler_ = connHandler;
     }
 
-    void handleRead();
-    void handleWrite();
-    void handleConn();
-    void handleError();
+    void handleRead() {
+        if (read_handler_) {
+            read_handler_();
+        }
+    }
+    void handleWrite() {
+        if (write_handler_) {
+            write_handler_();
+        }
+    }
+    void handleConn() {
+        if (conn_handler_) {
+            conn_handler_();
+        }
+    }
+    void handleError() {
+        if (error_handler_) {
+            conn_handler_();
+        }
+    }
+
     void setEvents(UINT32 events) {
         events_ = events;
     }
@@ -72,9 +89,11 @@ public:
     void handleEvents() {
         events_ = 0;
         if ((revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP))) {
-            handleRead();
+            handleRead(); 
         }
     }
 };
+
+typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 
 #endif // _CHANNEL_H_
