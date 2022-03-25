@@ -3,11 +3,10 @@
 
 #include <sys/epoll.h>
 #include "HttpProcesser.h"
-#include "EventLoop.h"
 #include "util/util.h"
 
 using namespace std;
-
+class EventLoop;
 class Channel
 {
 private:
@@ -15,6 +14,7 @@ private:
     EventLoop* loop_;
     UINT32 events_;
     UINT32 revents_;
+    UINT32 last_events_;
     
     weak_ptr<HttpProcesser> holder_; // 设置为虚指针从而不会影响 channel 的引用计数
     CallBack read_handler_;
@@ -86,6 +86,17 @@ public:
         return events_;
     }
 
+    UINT32 getLastEvents() {
+        return last_events_;
+    }
+
+    bool compareAndsetLastEvents() {
+        bool ret = last_events_ == events_;
+        last_events_ = events_;
+        return ret;
+    }
+
+    // TODO:
     void handleEvents() {
         events_ = 0;
         if ((revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP))) {

@@ -278,16 +278,20 @@ void HttpProcesser::handleConn()
     
 }
 
-
-int main()
+void HttpProcesser::handleClose()
 {
-    HttpProcesser* httpProcesser = new HttpProcesser();
-    // HTTP_CODE ret = httpProcesser->parseRequestline();
-    httpProcesser->inBuffer_ = "Host: 7.222.76.31:1997\r\nConnection: keep-alive\r\n\r\n";
-    HTTP_CODE ret = httpProcesser->parseHeaders();
-    for (auto key : httpProcesser->headMap) {
-        cout << key.first << "\t" << key.second << endl;
-    }
-    cout << ret << endl;
-    return 0;
+    
 }
+
+// int main()
+// {
+//     HttpProcesser* httpProcesser = new HttpProcesser();
+//     // HTTP_CODE ret = httpProcesser->parseRequestline();
+//     httpProcesser->inBuffer_ = "Host: 7.222.76.31:1997\r\nConnection: keep-alive\r\n\r\n";
+//     HTTP_CODE ret = httpProcesser->parseHeaders();
+//     for (auto key : httpProcesser->headMap) {
+//         cout << key.first << "\t" << key.second << endl;
+//     }
+//     cout << ret << endl;
+//     return 0;
+// }
