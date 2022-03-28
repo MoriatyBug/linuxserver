@@ -2,6 +2,8 @@
 #define _HTTP_PROCESSER_H_
 #include <string>
 #include <map>
+#include "EventLoop.h"
+#include "Channel.h"
 using namespace std;
 
 enum CHECK_STATE {
@@ -59,12 +61,14 @@ enum CONNECTION_STATE {
 
 class HttpProcesser {
 public:
-    // HttpProcesser();
+    HttpProcesser(EventLoop *eventLoop, int fd);
     // ~HttpProcesser();
     void handleClose();
     void newEvent();
 
 public:
+    EventLoop *event_loop_;
+    SHARED_PTR_CHANNEL channel_;
     int fd_;
     string inBuffer_;
     string outBuffer_;

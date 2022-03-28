@@ -14,7 +14,7 @@ EventLoop::EventLoop() {
     this->wakeup_fd_ = createEventFd();
     wakeup_channel_ = SHARED_PTR_CHANNEL(new Channel(this, this->wakeup_fd_));
     wakeup_channel_->setEvents(EPOLLIN | EPOLLET);
-    wakeup_channel_->setReadHandler(bind(&EventLoop::handleRead, this));
+    wakeup_channel_->setReadHandler(bind(&EventLoop::handleWakeup, this));
     wakeup_channel_->setConnHandler(bind(&EventLoop::handleConn, this));
     this->addToPoller(wakeup_channel_);
 }
@@ -24,13 +24,20 @@ void EventLoop::handleConn() {
 }
 
 void EventLoop::wakeup() {
-    uint64_t one = 1;
-    // ssize_t n = ;
-
+    uint64_t buf = 1;
+    ssize_t n = writen(wakeup_fd_, (void *)(&buf), sizeof(buf));
+    if (n != sizeof(buf)) {
+        cout << "write wakeupfd error" << endl;
+    }
 }
 
-void EventLoop::handleRead() {
-
+void EventLoop::handleWakeup() {
+    uint64_t buf = 1;
+    ssize_t n = readn(wakeup_fd_, (void *)(&buf), sizeof(buf));
+    if (n != sizeof(buf)) {
+        cout << "read wakeupfd error" << endl;
+    }
+    wakeup_channel_->setEvents(EPOLLIN | EPOLLET);
 }
 
 void EventLoop::loop() {
@@ -48,6 +55,7 @@ void EventLoop::loop() {
         }
         this->is_handling_event_ = false;
         appendFunctorsToExecute();
+        
     }
     looping_ = false;
 }

@@ -3,7 +3,7 @@
 
 #include <sys/epoll.h>
 #include "HttpProcesser.h"
-#include "util/util.h"
+#include "util/Util.h"
 
 using namespace std;
 class EventLoop;
@@ -37,19 +37,19 @@ public:
         return ret;
     }
 
-    void setReadHandler(CallBack &&readHandler) {
+    void setReadHandler(const CallBack &readHandler) {
         read_handler_ = readHandler;
     }
 
-    void setWriteHandler(CallBack &&writeHandler) {
+    void setWriteHandler(const CallBack &writeHandler) {
         write_handler_ = writeHandler;
     }
 
-    void setErrorHandler(CallBack &&errorHandler) {
+    void setErrorHandler(const CallBack &errorHandler) {
         error_handler_ = errorHandler;
     }
 
-    void setConnHandler(CallBack &&connHandler) {
+    void setConnHandler(const CallBack &connHandler) {
         conn_handler_ = connHandler;
     }
 

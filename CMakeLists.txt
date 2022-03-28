@@ -5,7 +5,7 @@ set(CXX_FLAGS
         -g
         -Wall
         -std=c++11
-        -D_PTHREADS
+        # -D_PTHREADS
         -Wno-unused-parameter
 )
 
@@ -24,6 +24,14 @@ set(SRC_LISTS
     Main.cpp
     Poller.cpp
     Timer.cpp
+    Thread.cpp
+    EventLoopThread.cpp
 )
 
+# include_directories(${PROJECT_SRC_PATH}/util)
+
 add_executable(linuxServer ${SRC_LISTS})
+
+target_link_libraries(linuxServer linux_server_lib pthread)
+
+add_subdirectory(util)

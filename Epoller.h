@@ -2,14 +2,25 @@
 #define _EPOLLER_H_
 
 #include "Channel.h"
-#include "util/util.h"
+#include "util/Util.h"
 #include "HttpProcesser.h"
+#include "Timer.h"
 
 class Channel;
 typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 const int EPOLLWAIT_TIME = 10000;
 class Epoller
 {
+private:
+    static const int MAXFDNUMS = 10000;
+    int epoll_fd_;
+    vector<epoll_event> events_;
+    // 用来反向查找 channel
+    SHARED_PTR_CHANNEL epollFdToChannel[MAXFDNUMS]; 
+    // 用来反向查找 httpProcesser
+    shared_ptr<HttpProcesser> epollFdToHttpProcesser[MAXFDNUMS];
+    TimerManager timer_manager_;
+
 public:
     void epollAdd(SHARED_PTR_CHANNEL channel, int timeout = 0);
     void epollDelete(SHARED_PTR_CHANNEL channel);
@@ -20,15 +31,8 @@ public:
         return epoll_fd_;
     }
     vector<SHARED_PTR_CHANNEL> getActiveEvents(int eventCount); // std move
-
-private:
-    static const int MAXFDNUMS = 10000;
-    int epoll_fd_;
-    vector<epoll_event> events_;
-    // 用来反向查找 channel
-    SHARED_PTR_CHANNEL epollFdToChannel[MAXFDNUMS]; 
-    // 用来反向查找 httpProcesser
-    shared_ptr<HttpProcesser> epollFdToHttpProcesser[MAXFDNUMS];
+    void handleExpire();
+    void addTimer(SHARED_PTR_CHANNEL channel, int timeout);
 };
 
 #endif

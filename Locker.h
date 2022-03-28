@@ -1,3 +1,5 @@
+#ifndef _LOCKER_H_
+#define _LOCKER_H_
 #include "util/Noncopyable.h"
 #include <pthread.h>
 
@@ -39,3 +41,5 @@ public:
 private:
     MutexLock &mutex_lock_;
 };
+
+#endif // _LOCKER_H_

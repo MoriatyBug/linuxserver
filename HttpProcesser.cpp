@@ -3,6 +3,22 @@
 #include <string>
 
 using namespace std;
+HttpProcesser::HttpProcesser(EventLoop *eventLoop, int fd)
+    : event_loop_(eventLoop),
+      channel_(new Channel(eventLoop, fd)),
+      fd_(fd),
+      curReadIndex(0),
+      check_state_(CHECK_STATE_REQUEST_LINE),
+      keepAlive_(false),
+      header_state_(H_START),
+      version_(HTTP_11),
+      method_(HTTP_GET),
+      connection_state_(C_DISCONNECTING)
+{
+    channel_->setReadHandler(bind(&HttpProcesser::handleRead, this));
+    channel_->setWriteHandler(bind(&HttpProcesser::handleWrite, this));
+    channel_->setConnHandler(bind(&HttpProcesser::handleConn, this));
+}
 
 HTTP_CODE HttpProcesser::parseRequestline()
 {

@@ -2,9 +2,10 @@
 #define _EVENTLOOP_H_
 
 #include "Epoller.h"
-#include "util/util.h"
+#include "util/Util.h"
 #include <assert.h>
 #include "Locker.h"
+#include "Thread.h"
 
 class Channel;
 typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
@@ -18,7 +19,7 @@ public:
     void runInLoop(CallBack &&functor);
     void queueInLoop(CallBack &&functor);
     bool isInLoopThread() {
-        return thread_id_ == 0;
+        return thread_id_ == CurrentThread::getThreadId();
     }
 
     void assertInLoopThread() {
@@ -55,8 +56,8 @@ private:
     int wakeup_fd_; // 用来唤醒线程来执行回调函数
     SHARED_PTR_CHANNEL wakeup_channel_;
     MutexLock mutex_lock_; 
-    void wakeup();
-    void handleRead();
+    void wakeup();          // 往唤醒文件描述符中写入内容
+    void handleWakeup();    // 监听唤醒文件描述符 
     void appendFunctorsToExecute();
     void handleConn();
 };

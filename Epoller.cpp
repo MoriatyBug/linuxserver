@@ -79,3 +79,14 @@ vector<SHARED_PTR_CHANNEL> Epoller::getActiveEvents(int eventCount) {
 
     return activeChannelLists;
 }
+
+void Epoller::handleExpire()
+{
+    this->timer_manager_.handleExpire();
+}
+
+void Epoller::addTimer(SHARED_PTR_CHANNEL channel, int timeout)
+{
+    shared_ptr<HttpProcesser> httpProcesser = channel->getHolder();
+    this->timer_manager_.addTimer(httpProcesser, timeout);
+}
