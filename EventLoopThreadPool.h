@@ -22,20 +22,7 @@ public:
     EventLoop* getNextEventLoop();
 };
 
-EventLoopThreadPool::EventLoopThreadPool(EventLoop *baseLoop, int threadNum)
-    : base_loop_(baseLoop),
-      is_started_(false),
-      thread_num_(threadNum),
-      next_(0)
-{
-    if (threadNum <= 0) {
-        cout << "thread num <= 0" << endl;
-    }
-}
 
-EventLoopThreadPool::~EventLoopThreadPool()
-{
-}
 
 
 #endif // _EVENTLOOP_THREADPOOL_H_

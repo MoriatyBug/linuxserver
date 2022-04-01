@@ -7,6 +7,7 @@
 #include "Timer.h"
 
 class Channel;
+class TimerManager;
 typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 const int EPOLLWAIT_TIME = 10000;
 class Epoller
@@ -19,9 +20,11 @@ private:
     SHARED_PTR_CHANNEL epollFdToChannel[MAXFDNUMS]; 
     // 用来反向查找 httpProcesser
     shared_ptr<HttpProcesser> epollFdToHttpProcesser[MAXFDNUMS];
-    TimerManager timer_manager_;
+    unique_ptr<TimerManager> timer_manager_;
 
 public:
+    Epoller();
+    ~Epoller();
     void epollAdd(SHARED_PTR_CHANNEL channel, int timeout = 0);
     void epollDelete(SHARED_PTR_CHANNEL channel);
     void epollUpdate(SHARED_PTR_CHANNEL channel, int timeout = 0);

@@ -26,7 +26,7 @@ Thread::Thread(const CallBack& func)
 void CurrentThread::cacheThreadId()
 {
     if (cached_thread_id == 0) {
-        cached_thread_id = CurrentThread::getThreadId();
+        cached_thread_id = gettid();
     }
 }
 
@@ -52,10 +52,10 @@ void Thread::start()
     if (pthread_create(&thread_id_, NULL, &startThread, this)) { 
         is_started_ = false;
     } else {
-        assert(tid_ > 0);
+        cout << "thread started" << endl;
+        assert(thread_id_ > 0);
     }
 }
-
 
 int Thread::join()
 {

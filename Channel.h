@@ -7,6 +7,7 @@
 
 using namespace std;
 class EventLoop;
+class HttpProcesser;
 class Channel
 {
 private:
@@ -32,8 +33,12 @@ public:
         fd_ = fd;
     }
 
+    void setHolder(shared_ptr<HttpProcesser> httpProcesser) {
+        holder_ = httpProcesser;
+    }
+
     shared_ptr<HttpProcesser> getHolder() {
-        shared_ptr<HttpProcesser> ret(holder_.lock()); // ?啥意思
+        shared_ptr<HttpProcesser> ret(holder_.lock()); // 转成 shared_ptr 并返回
         return ret;
     }
 
@@ -96,12 +101,20 @@ public:
         return ret;
     }
 
-    // TODO:
     void handleEvents() {
         events_ = 0;
-        if ((revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP))) {
+        if ((revents_ & EPOLLHUP) && !(revents_ & EPOLLIN)) {
+            events_ = 0;
+            return;
+        }
+
+        if (revents_ & (EPOLLIN | EPOLLPRI | EPOLLRDHUP)) {
             handleRead(); 
         }
+        if (revents_ & (EPOLLOUT)) {
+            handleWrite();
+        }
+        handleConn();
     }
 };
 

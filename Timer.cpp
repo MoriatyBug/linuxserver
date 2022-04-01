@@ -8,8 +8,10 @@ size_t calCurTime (int timeout = 0) {
     return expired_time_;
 }
 
-TimerNode::TimerNode(SHARED_PTR_HTTP_PROCESSER httpProcesser, int timeout) :
-    deleted_(false), http_processer_(httpProcesser) {
+TimerNode::TimerNode(SHARED_PTR_HTTP_PROCESSER httpProcesser, int timeout)
+    : deleted_(false), 
+      http_processer_(httpProcesser) 
+{
     expired_time_ = calCurTime(timeout);
 }
 
@@ -28,15 +30,20 @@ TimerNode::~TimerNode() {
     }
 }
 
+// TODO 干啥用的？
+void TimerNode::clearReq()
+{
+    http_processer_.reset();
+    this->deleteNode();
+}
 void TimerNode::update(int timeout) {
     this->expired_time_ = calCurTime(timeout);
 }
 
-
-
 void TimerManager::addTimer(SHARED_PTR_HTTP_PROCESSER httpProcesser, int timeout) {
     SHARED_PTR_TIMER_NODE timerNode(new TimerNode(httpProcesser, timeout));
     this->timer_priority_queue_.push(timerNode);
+    // httpProcesser->setTimer(timerNode);
 }
 
 void TimerManager::handleExpire() {
@@ -50,8 +57,4 @@ void TimerManager::handleExpire() {
             break;
         }
     }
-}
-
-int main() {
-    // TimerNode* timerNode = new TimerNode();
 }

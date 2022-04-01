@@ -1,11 +1,20 @@
 #include "Epoller.h"
+#include <sys/time.h>
+Epoller::Epoller()
+    : epoll_fd_(epoll_create1(EPOLL_CLOEXEC)),
+      events_(4096),
+      timer_manager_(new TimerManager())
+{
+   assert(epoll_fd_ > 0); 
+}
+
+Epoller::~Epoller() {}
 
 
 void Epoller::epollAdd(SHARED_PTR_CHANNEL channel, int timeout) {
     int fd = channel->getFd();
     if (timeout > 0) {
-        // TODO 添加计时器
-
+        addTimer(channel, timeout);
         this->epollFdToHttpProcesser[fd] = channel->getHolder();
     }
     epoll_event event;
@@ -36,7 +45,7 @@ void Epoller::epollDelete(SHARED_PTR_CHANNEL channel) {
 
 void Epoller::epollUpdate(SHARED_PTR_CHANNEL channel, int timeout) {
     int fd = channel->getFd();
-    // add_timer();
+    addTimer(channel, timeout);
     if (!channel->compareAndsetLastEvents()) {
         epoll_event event;
         event.data.fd = fd;
@@ -49,14 +58,18 @@ void Epoller::epollUpdate(SHARED_PTR_CHANNEL channel, int timeout) {
 
 // TODO std move 优化
 vector<SHARED_PTR_CHANNEL> Epoller::poll() {
+    struct timeval start;
+    gettimeofday(&start, NULL);
     while (true) {
-        int eventCount = epoll_wait(this->epoll_fd_, &this->events_[0], 
-                                    this->events_.size(), EPOLLWAIT_TIME);
+        int eventCount = epoll_wait(this->epoll_fd_, &*events_.begin(), 
+                                    this->events_.size(), 10000);
         if (eventCount < 0) {
-            cout << "epoll_wait error" << endl;
+            // cout << "epoll_wait error" << endl;
         }
         vector<SHARED_PTR_CHANNEL> activeChannelLists = getActiveEvents(eventCount);
         if (activeChannelLists.size() > 0) {
+            struct timeval now;
+            gettimeofday(&now, NULL);
             return activeChannelLists;
         }
     }
@@ -82,11 +95,11 @@ vector<SHARED_PTR_CHANNEL> Epoller::getActiveEvents(int eventCount) {
 
 void Epoller::handleExpire()
 {
-    this->timer_manager_.handleExpire();
+    this->timer_manager_->handleExpire();
 }
 
 void Epoller::addTimer(SHARED_PTR_CHANNEL channel, int timeout)
 {
     shared_ptr<HttpProcesser> httpProcesser = channel->getHolder();
-    this->timer_manager_.addTimer(httpProcesser, timeout);
+    this->timer_manager_->addTimer(httpProcesser, timeout);
 }

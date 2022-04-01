@@ -31,7 +31,7 @@ private:
 namespace CurrentThread
 {
     extern __thread int cached_thread_id;
-    void cacheThreadId();
+    extern void cacheThreadId();
     inline int getThreadId() {
         if(__builtin_expect(cached_thread_id == 0, 0)) { // 分支预测，等于 0 的可能性比较小
             cacheThreadId();

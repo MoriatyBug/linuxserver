@@ -3,6 +3,9 @@
 #include <string>
 
 using namespace std;
+
+const int DEFAULT_EXPIRED_TIME = 2000;
+const int DEFAULT_KEEP_ALIVE_TIME = 5 * 60 * 1000; 
 HttpProcesser::HttpProcesser(EventLoop *eventLoop, int fd)
     : event_loop_(eventLoop),
       channel_(new Channel(eventLoop, fd)),
@@ -13,11 +16,16 @@ HttpProcesser::HttpProcesser(EventLoop *eventLoop, int fd)
       header_state_(H_START),
       version_(HTTP_11),
       method_(HTTP_GET),
-      connection_state_(C_DISCONNECTING)
+      connection_state_(C_CONNECTED),
+      error_(false)
 {
     channel_->setReadHandler(bind(&HttpProcesser::handleRead, this));
     channel_->setWriteHandler(bind(&HttpProcesser::handleWrite, this));
     channel_->setConnHandler(bind(&HttpProcesser::handleConn, this));
+}
+
+HttpProcesser::~HttpProcesser()
+{
 }
 
 HTTP_CODE HttpProcesser::parseRequestline()
@@ -224,23 +232,23 @@ HTTP_CODE HttpProcesser::parseHeaders()
 HTTP_CODE HttpProcesser::analysisRequest()
 {
     if (method_ == HTTP_GET || method_ == HTTP_HEAD) {
-        string header;
+        cout << "filename: " << fileName_ << endl;
+        // string header;
 
     }
-
-    return INTERNAL_ERROR;
+    return ANALYSIS_SUCCESS;
 }
 
 void HttpProcesser::handleRead()
 {
     while (true) {
-        // int read_num = readn(fd_, inBuffer_, zero); 
+        bool tmp = false;
+        int readCount = readn(fd_, inBuffer_, tmp);
+        cout << inBuffer_ << endl;
         if (connection_state_ == C_DISCONNECTING) {
             inBuffer_.clear();
             break;
         }
-        cout << inBuffer_ << endl;
-
         if (check_state_ == CHECK_STATE_REQUEST_LINE) {
             HTTP_CODE ret = this->parseRequestline();
             if (ret == BAD_REQUEST) {
@@ -291,23 +299,63 @@ void HttpProcesser::handleRead()
 
 void HttpProcesser::handleConn()
 {
-    
+    seperateTimer();
+    UINT32 &events = channel_->getEvents();
+    int timeout = 0;
+    if (!error_ && connection_state_ == C_CONNECTED) {
+        if (events != 0) {
+            timeout = DEFAULT_EXPIRED_TIME;
+            if ((events & EPOLLIN) || (events & EPOLLOUT)) {
+                events = 0;
+                events |= EPOLLOUT;
+            }
+            events |= EPOLLET;
+        } else if (keepAlive_) {
+            events |= DEFAULT_EVENT;
+            timeout = DEFAULT_KEEP_ALIVE_TIME;
+        } else {
+            events |= DEFAULT_EVENT;
+            timeout = DEFAULT_EXPIRED_TIME;
+        }
+        event_loop_->updatePoller(channel_, timeout);
+    } else if (!error_ && connection_state_ == C_DISCONNECTING &&
+                (events & EPOLLOUT)) {
+        events = DEFAULT_EVENT;
+    } else {
+        event_loop_->runInLoop(bind(&HttpProcesser::handleClose, this));
+    }
 }
 
 void HttpProcesser::handleClose()
 {
-    
+    connection_state_ = C_DISCONNECTED;
+    // 移除事件
+    event_loop_->removeFromPoller(channel_);
 }
 
-// int main()
-// {
-//     HttpProcesser* httpProcesser = new HttpProcesser();
-//     // HTTP_CODE ret = httpProcesser->parseRequestline();
-//     httpProcesser->inBuffer_ = "Host: 7.222.76.31:1997\r\nConnection: keep-alive\r\n\r\n";
-//     HTTP_CODE ret = httpProcesser->parseHeaders();
-//     for (auto key : httpProcesser->headMap) {
-//         cout << key.first << "\t" << key.second << endl;
-//     }
-//     cout << ret << endl;
-//     return 0;
-// }
+void HttpProcesser::handleWrite()
+{
+    if (!error_ && connection_state_ != C_DISCONNECTED) {
+        UINT32 &events = channel_->getEvents();
+        if (writen(fd_, outBuffer_) < 0) {
+            error_ = true;
+            events = 0;
+        }
+        if (outBuffer_.size() > 0) events |= EPOLLOUT;
+    }
+}
+
+void HttpProcesser::newEvent()
+{
+    channel_->setEvents(DEFAULT_EVENT | EPOLLONESHOT);
+    event_loop_->addToPoller(channel_, DEFAULT_EXPIRED_TIME);
+}
+
+void HttpProcesser::seperateTimer()
+{
+    if (timer_.lock()) {
+        shared_ptr<TimerNode> tmpTimer(timer_.lock());
+        tmpTimer->clearReq();
+        timer_.reset();
+    }
+}

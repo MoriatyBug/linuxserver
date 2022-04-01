@@ -8,6 +8,7 @@
 #include "Thread.h"
 
 class Channel;
+class Epoller;
 typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 
 class EventLoop
@@ -29,21 +30,14 @@ public:
     void shutdown(SHARED_PTR_CHANNEL channel) {
         // shutdownWR(channel->getFd());
     }
-
-
     /* 封装 poll 的接口与 poll 交互 */
-    void removeFromPoller(SHARED_PTR_CHANNEL channel) {
-        this->poller_->epollDelete(channel);
+    void removeFromPoller(SHARED_PTR_CHANNEL channel);
+    void updatePoller(SHARED_PTR_CHANNEL channel, int timeout = 0);
+    void addToPoller(SHARED_PTR_CHANNEL channel, int timeout = 0);
+    int getThreadId() {
+        return thread_id_;
     }
-
-    void updatePoller(SHARED_PTR_CHANNEL channel, int timeout = 0) {
-        this->poller_->epollUpdate(channel, timeout);
-    }
-
-    void addToPoller(SHARED_PTR_CHANNEL channel, int timeout = 0) {
-        this->poller_->epollAdd(channel, timeout);
-    }
-
+    
 private:
     bool looping_;
     shared_ptr<Epoller> poller_;

@@ -1,12 +1,14 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_
 
-
 #include "util/Util.h"
 #include <queue>
+#include <deque>
 #include "HttpProcesser.h"
 
+class HttpProcesser;
 typedef shared_ptr<HttpProcesser> SHARED_PTR_HTTP_PROCESSER;
+
 class TimerNode {
 public:
     TimerNode(SHARED_PTR_HTTP_PROCESSER httpProcesser, int timeout);
@@ -23,6 +25,7 @@ public:
     }
     bool isValid();
     void update(int timeout);
+    void clearReq();
 
 private:
     bool deleted_;

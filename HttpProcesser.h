@@ -4,8 +4,14 @@
 #include <map>
 #include "EventLoop.h"
 #include "Channel.h"
+#include "util/Util.h"
+#include "Timer.h"
 using namespace std;
 
+class EventLoop;
+class Channel;
+class TimerNode;
+typedef shared_ptr<Channel> SHARED_PTR_CHANNEL;
 enum CHECK_STATE {
     CHECK_STATE_REQUEST_LINE = 0,
     CHECK_STATE_HEADER,
@@ -59,12 +65,20 @@ enum CONNECTION_STATE {
     C_DISCONNECTED,
 };
 
-class HttpProcesser {
+class HttpProcesser : public enable_shared_from_this<HttpProcesser> {
 public:
     HttpProcesser(EventLoop *eventLoop, int fd);
-    // ~HttpProcesser();
+    ~HttpProcesser();
     void handleClose();
     void newEvent();
+    SHARED_PTR_CHANNEL getChannel() {
+        return channel_;
+    }
+    void setTimer(shared_ptr<TimerNode> timer) {
+        if (!timer_.lock())
+            timer_ = timer;
+    }
+    void seperateTimer();
 
 public:
     EventLoop *event_loop_;
@@ -85,6 +99,8 @@ public:
     HTTP_VERSION version_;
     HTTP_METHOD method_;
     CONNECTION_STATE connection_state_;
+    bool error_;
+    weak_ptr<TimerNode> timer_;
 
     void handleRead();
     void handleWrite();

@@ -26,6 +26,8 @@ set(SRC_LISTS
     Timer.cpp
     Thread.cpp
     EventLoopThread.cpp
+    Server.cpp
+    EventLoopThreadPool.cpp
 )
 
 # include_directories(${PROJECT_SRC_PATH}/util)

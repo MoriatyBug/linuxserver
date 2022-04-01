@@ -22,6 +22,7 @@ EventLoop* EventLoopThread::startLoop() {
     thread_.start();
     {
         MutexLockGuard mutexLockGuard(mutex_lock_);
+        // 等待线程真正启动时创建 eventLoop
         while (event_loop_ == NULL) {
             condition_.wait();
         }
@@ -29,9 +30,11 @@ EventLoop* EventLoopThread::startLoop() {
     }
 }
 
+/* 线程实际运行的函数 */
 void EventLoopThread::threadFunc() {
     EventLoop eventLoop;
     {
+        // 当 eventLoop 创建成功的时候，通知外层保存 eventLoop
         MutexLockGuard mutexLockGuard(mutex_lock_);
         event_loop_ = &eventLoop;
         condition_.notify();

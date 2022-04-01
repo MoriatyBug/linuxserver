@@ -2,6 +2,20 @@
 #include <sys/epoll.h>
 #include <sys/eventfd.h>
 
+/* 封装 poll 的接口与 poll 交互 */
+void EventLoop::removeFromPoller(SHARED_PTR_CHANNEL channel) {
+    this->poller_->epollDelete(channel);
+}
+
+void EventLoop::updatePoller(SHARED_PTR_CHANNEL channel, int timeout) {
+    this->poller_->epollUpdate(channel, timeout);
+}
+
+void EventLoop::addToPoller(SHARED_PTR_CHANNEL channel, int timeout) {
+    this->poller_->epollAdd(channel, timeout);
+}
+
+
 int createEventFd() {
     int eventFd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
     if (eventFd < 0) {
@@ -10,10 +24,17 @@ int createEventFd() {
     return eventFd;
 }
 
-EventLoop::EventLoop() {
-    this->wakeup_fd_ = createEventFd();
-    wakeup_channel_ = SHARED_PTR_CHANNEL(new Channel(this, this->wakeup_fd_));
-    wakeup_channel_->setEvents(EPOLLIN | EPOLLET);
+EventLoop::EventLoop() 
+    : looping_(false),
+      poller_(new Epoller()),
+      quit_(false),
+      is_calling_functors_(false),
+      is_handling_event_(false),
+      thread_id_(CurrentThread::getThreadId()),
+      wakeup_fd_(createEventFd()),
+      wakeup_channel_(new Channel(this, wakeup_fd_))
+{
+    wakeup_channel_->setEvents(DEFAULT_EVENT);
     wakeup_channel_->setReadHandler(bind(&EventLoop::handleWakeup, this));
     wakeup_channel_->setConnHandler(bind(&EventLoop::handleConn, this));
     this->addToPoller(wakeup_channel_);
@@ -37,7 +58,7 @@ void EventLoop::handleWakeup() {
     if (n != sizeof(buf)) {
         cout << "read wakeupfd error" << endl;
     }
-    wakeup_channel_->setEvents(EPOLLIN | EPOLLET);
+    wakeup_channel_->setEvents(DEFAULT_EVENT);
 }
 
 void EventLoop::loop() {
@@ -55,7 +76,7 @@ void EventLoop::loop() {
         }
         this->is_handling_event_ = false;
         appendFunctorsToExecute();
-        
+        poller_->handleExpire();
     }
     looping_ = false;
 }

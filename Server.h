@@ -12,10 +12,9 @@ private:
     int thread_num_;
     unique_ptr<EventLoopThreadPool> thread_pool_;
     bool is_started_;
-    shared_ptr<Channel> channel_;
     int port_;
     int listen_fd_;
-    
+    shared_ptr<Channel> channel_;
 
 public:
     Server(EventLoop *eventLoop, int threadNum, int port);
